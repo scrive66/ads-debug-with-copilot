@@ -1,0 +1,40 @@
+# デバッグループ定義
+# 「一緒に見るべき変数のまとまり」をグループとして定義する。
+# Copilot はここの description / normal を手掛かりに異常を判断する。
+#
+# symbols の各要素:
+#   name:            変数名 (POU名.変数名 / GVL名.変数名)。必須
+#   mode:            on_change (変化時のみ通知, 既定) | cycle (周期通知)
+#   cycle_ms:        mode=cycle の周期。アナログ値はこちらが無難
+#   deadband:        数値の不感帯。これ未満の変化はイベントにしない (記録値基準)
+#   min_interval_ms: この間隔未満の連続変化を抑制する (チャタリング対策)
+#
+# 配列・構造体は Notification 対象外で、開始時の baseline のみ読まれる。
+
+groups:
+  example_axis:
+    description: "軸1 サーボの状態一式 (サンプル: 実在の変数名に置き換えること)"
+    # グループ全体の既定値 (symbols 側で上書き可)
+    mode: on_change
+    normal: "bError が FALSE で、nErrorId が 0。動作中は fActPosition が fSetPosition に追従する"
+    symbols:
+      - name: "MAIN.stAxis1.bError"
+      - name: "MAIN.stAxis1.nErrorId"
+      - name: "MAIN.stAxis1.bMoving"
+      # 位置は毎サイクル変わるので cycle + deadband で間引く例
+      - name: "MAIN.stAxis1.fActPosition"
+        mode: cycle
+        cycle_ms: 200
+        deadband: 0.01
+      - name: "MAIN.stAxis1.fSetPosition"
+        mode: cycle
+        cycle_ms: 200
+        deadband: 0.01
+
+  example_io:
+    description: "主要なデジタル入力 (サンプル)"
+    normal: "非常停止系がすべて FALSE (正常) のこと"
+    symbols:
+      - name: "GVL_IO.bEmergencyStop"
+        min_interval_ms: 50
+      - name: "GVL_IO.bSafetyDoorOpen"

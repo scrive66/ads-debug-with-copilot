@@ -1,0 +1,1 @@
+{"servers":{"twincat-ads":{"args":["run","--project","${workspaceFolder}/tools/ads-mcp","python","${workspaceFolder}/tools/ads-mcp/server.py"],"command":"uv","type":"stdio"},"twincat-ads-mock":{"args":["run","--project","${workspaceFolder}/tools/ads-mcp","python","${workspaceFolder}/tools/ads-mcp/server.py"],"command":"uv","env":{"ADS_MCP_BACKEND":"mock"},"type":"stdio"}}}

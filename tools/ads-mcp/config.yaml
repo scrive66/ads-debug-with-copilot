@@ -1,0 +1,27 @@
+# TwinCAT ADS 接続設定
+# 環境変数 ADS_MCP_* が優先される (NET_ID / PORT / BACKEND / LOCAL_NET_ID)。
+
+# バックエンド: pyads = 実機 / mock = 模擬PLC (実機なしで全ツールを試す用)
+backend: "pyads"
+
+# 対象 PLC の AMS Net ID (例: 192.168.1.101.1.1 / ローカル実行中なら 127.0.0.1.1.1)
+net_id: "127.0.0.1.1.1"
+
+# ADS ポート: TwinCAT 3 の PLC ランタイム 1 本目は 851 (2 本目は 852...)
+port: 851
+
+# --- AI 側 Windows の ADS ルータ -------------------------------------------
+# 標準構成: AI 側 Windows に TC1000 (TwinCAT 3 ADS Setup) を入れ、
+# その AMS ルータ経由で通信する (TcAdsDll + ルータ + Router UI が入る)。
+# ルートは Router UI (トレイの TwinCAT アイコン > Router > Edit Routes) で
+# 対象 PLC へ双方向に張ること。PLC 側にも AI 側への戻りルートが必要。
+router:
+  install: "TC1000 (TwinCAT 3 ADS Setup)"
+  # AI 側 Windows 自身の AMS Net ID (Router UI / About で確認。記録用)
+  local_net_id: null
+  # Router UI で付けたルート名 (記録用)
+  route_name: null
+
+# ローカル側の AMS Net ID を pyads から指定する場合 (Linux 等の
+# ルータレス構成専用)。Windows ではルータが割り当てるため null のまま。
+local_net_id: null
