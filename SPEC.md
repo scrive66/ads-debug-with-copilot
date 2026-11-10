@@ -2,12 +2,13 @@
 
 | 項目 | 内容 |
 |---|---|
-| 文書版 | 0.4 (2026-11-11) |
+| 文書版 | 0.5 (2026-11-11) |
 | 対象 | GitHub Copilot から TwinCAT PLC 実機の変数を読み取り専用で観測し、デバッグに使う環境 |
 | 実装 | `tools/ads-mcp/server.py` (Python + pyads + FastMCP) |
 | 状態 | スケルトン完成。モックでの全フロー検証済み。実機疎通は未実施 (受入手順は §11) |
 | 0.3 の変更 | 実装を通じて判明した知見・注意点を §12 として新設し、関連節 (§8 / §10 / §13) に反映した |
 | 0.4 の変更 | §12.3 の対策 (エラー分類・リトライ限定・watch の error 遷移) を実装し、回帰テスト 3 件を追加した |
+| 0.5 の変更 | §13.1 に外部実装 beckhoff_mcp との比較と採用候補を記録した (実装変更なし) |
 
 ## 1. 目的とスコープ
 
@@ -351,6 +352,26 @@ groups:
 - 対象 PLC は単一 (config 単位)。複数台は MCP サーバを分けて登録する。
 - 構造体の丸読み (read_structure_by_name 相当) は未提供。必要になったら structure_def を groups.yaml に持たせて追加する。
 - MCP SDK は 1.x 固定。2.x 移行時は FastMCP → MCPServer の改名対応が必要。
+
+### 13.1 外部実装との比較: malcolm-mill/beckhoff_mcp (2026-11-11 調査)
+
+- 対象: GitHub 公開の同種 MCP サーバ (Python + pyads + FastMCP、単一ファイル 2,466 行、ツール 14、本実装と同じく読み取り専用)。README / DOCUMENTATION / server.py 全文を確認した。
+- 相手の優位点:
+  - EtherCAT 診断ツール群 (マスタ状態 / スレーブ数 / トポロジ / スレーブ詳細 + CRC エラー。ポート 0xFFFF へ別接続し Index Group を直接読む)
+  - 任意 ADS ポート読み (query_ads_port / read_from_port。EK1200 等の I/O イメージ直読み)
+  - UDP ディスカバリ (pyads_ex.adsGetNetIdForPLC) による IP → AMS Net ID 解決と動的接続。ただし route 追加は Linux のみで、Windows は手動登録 = 本仕様の前提 (§4) と一致する
+  - シンボル一覧のページング (limit / offset / has_more) とコメント付き返却、起動時の全シンボルキャッシュ
+  - 複数読みの部分成功セマンティクス (results / errors / summary に分けて返す)
+  - ツールアノテーション (readOnlyHint 等) の全ツール付与、ADS 状態の名前変換 (Run / Stop / Config 等)、エラーコード別の対処 hint の返却
+  - Windows での TcAdsDll パス登録 (os.add_dll_directory)
+- 本実装の優位点:
+  - Notification 監視 (watch / deadband / イベント履歴)。相手は read_by_name のループ読みのみで、Sum Read も使っていない
+  - 設定の外部化 (config.yaml / 環境変数 / groups.yaml)。相手は接続定数がコード直書き
+  - エラー分類と watch 保護 (§12.3)。相手は例外を文字列化して返すのみ
+  - テストとモック (pytest 7 件 + MCP E2E)。相手はテスト無し
+- 採用候補 (未実装、優先順): A. EtherCAT 診断ツール群 / B. アノテーション・状態名変換・エラー hint・DLL パス登録 / C. search_symbols のページング・コメント・キャッシュ / D. ad-hoc 複数読み read_symbols (Sum Read ベースで実装する) / E. 任意ポート読み / F. UDP ディスカバリはサーバ本体ではなく smoke_test 側の補助として
+- 採用しない: パスワードをツール引数で受け取る route 自動作成 (認証情報が LLM の文脈を流れるため)。ルート登録は TC1000 + Router UI の手動 (§4) を維持する。
+- 判断 (2026-11-11、Lon): 本節の記録のみとし、実装は行わない。着手する場合は A + B を第一弾とする。
 
 ## 14. ファイル一覧
 ```
